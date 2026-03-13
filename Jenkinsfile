@@ -34,12 +34,13 @@ pipeline {
         bat '''
         echo ORBIT_SIGNAL > %DATA_DIR%\\orbit.txt
         echo SENSOR_SIGNAL > %DATA_DIR%\\sensor.txt
+        echo FUEL_LEVEL: 85% > %DATA_DIR%\\fuel.txt
         dir %DATA_DIR%
         '''
 
         echo "Combining satellite signals..."
         bat '''
-        type %DATA_DIR%\\orbit.txt %DATA_DIR%\\sensor.txt > build\\combined_signal.txt
+        type %DATA_DIR%\\orbit.txt %DATA_DIR%\\sensor.txt %DATA_DIR%\\fuel.txt > build\\combined_signal.txt
         dir build
         '''
 
@@ -90,6 +91,18 @@ pipeline {
           }
         }
 
+        stage('Fuel Status Analyze') {
+          steps {
+            retry(2){
+            echo "Validating Fuel Status data..."
+            bat '''
+            if not exist %DATA_DIR%\\fuel.txt (exit /b 1)
+            type %DATA_DIR%\\fuel.txt
+            '''
+            sleep time: 2, unit: 'SECONDS'
+          }
+        }
+
       }
 
     }
@@ -108,6 +121,7 @@ pipeline {
         echo ^<testsuite name="satellite-tests"^> > results\\report.xml
         echo ^<testcase classname="orbit" name="orbitTest"/^> >> results\\report.xml
         echo ^<testcase classname="sensor" name="sensorTest"/^> >> results\\report.xml
+        echo ^<testcase classname="fuel" name="fuelTest"/^> >> results\\report.xml
         echo ^</testsuite^> >> results\\report.xml
         dir results
         type results\\report.xml
@@ -121,7 +135,11 @@ pipeline {
     stage('Secure Deployment Preparation') {
 
       when {
-        expression { env.GIT_BRANCH == 'origin/main' }
+        allOf{
+          branch 'main' 
+          environment name: 'APP_ENV', value: 'staging'
+        }
+        
       }
 
       steps {
@@ -155,7 +173,7 @@ pipeline {
         dir build
         '''
 
-        archiveArtifacts artifacts: 'build/**'
+        archiveArtifacts artifacts: 'build/**, results/report.xml'
       }
 
     }
