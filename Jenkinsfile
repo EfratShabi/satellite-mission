@@ -50,12 +50,9 @@ pipeline {
     }
 
     stage('Satellite Signal Analysis') {
-
       parallel {
-
         stage('Analyze Orbital Signals') {
           steps {
-
             retry(2) {
               echo "Analyzing orbital signals (retry demo)..."
               bat '''
@@ -67,16 +64,13 @@ pipeline {
               '''
               sleep time: 4, unit: 'SECONDS'
             }
-
           }
         }
 
         stage('Analyze Sensor Signals') {
           steps {
             echo "Analyzing sensor signals..."
-            bat '''
-            type %DATA_DIR%\\sensor.txt
-            '''
+            bat 'type %DATA_DIR%\\sensor.txt'
             sleep time: 4, unit: 'SECONDS'
           }
         }
@@ -84,28 +78,25 @@ pipeline {
         stage('Validate Combined Data') {
           steps {
             echo "Validating combined data..."
-            bat '''
-            type build\\combined_signal.txt
-            '''
+            bat 'type build\\combined_signal.txt'
             sleep time: 4, unit: 'SECONDS'
           }
         }
 
         stage('Fuel Status Analyze') {
           steps {
-            retry(2){
-            echo "Validating Fuel Status data..."
-            bat '''
-            if not exist %DATA_DIR%\\fuel.txt (exit /b 1)
-            type %DATA_DIR%\\fuel.txt
-            '''
-            sleep time: 2, unit: 'SECONDS'
-          }
-        }
-
-      }
-
-    }
+            retry(2) {
+              echo "Validating Fuel Status data..."
+              bat '''
+              if not exist %DATA_DIR%\\fuel.txt (exit /b 1)
+              type %DATA_DIR%\\fuel.txt
+              '''
+              sleep time: 2, unit: 'SECONDS'
+            } 
+          } 
+        } 
+      } 
+    }   
     stage('Print Branch Name') {
         steps {
             echo "The current branch is: ${env.BRANCH_NAME}"
